@@ -31,7 +31,7 @@
   <main class="app" role="application" aria-label="RandomiseMe">
     <header class="header">
       <img src="logo/Randomise.png" alt="RandomiseMe"/>
-      <p class="flavour-text" data-i18n-html="flavour.text">Hi, how are you today? <br/> Let’s pick a new project! :)</p>
+      <p class="flavour-text" data-i18n-html="flavour.text">Hey, let’s pick a new project! :)</p>
     </header>
 
     <section class="controls" aria-label="Controls">
@@ -50,7 +50,19 @@
 
       <div class="import-section">
         <label class="custom-file-button btn-info iconish" data-icon="📂" for="fileInput" data-i18n="btn.import" data-i18n-aria="btn.import">📂 Import list (txt or csv)</label>
-        <input id="fileInput" type="file" accept=".txt,.csv" hidden/>
+        <input id="fileInput" type="file" accept=".txt,.csv" multiple hidden/>
+      </div>
+
+      <div class="listbar" aria-label="Lists">
+        <div class="listbar-left">
+          <label for="listSelect" class="sr-only" data-i18n="lists.label">List</label>
+          <select id="listSelect" data-i18n-aria="lists.label" aria-label="List"></select>
+        </div>
+        <div class="listbar-actions">
+          <button id="newListBtn" class="btn-info iconish" data-icon="🧾" data-i18n="lists.new" data-i18n-aria="lists.new">🧾 New list</button>
+          <button id="renameListBtn" class="btn-neutral iconish" data-icon="✏️" data-i18n="lists.rename" data-i18n-aria="lists.rename">✏️ Rename</button>
+          <button id="deleteListBtn" class="btn-danger iconish" data-icon="🗑" data-i18n="lists.delete" data-i18n-aria="lists.delete">🗑 Delete</button>
+        </div>
       </div>
 
       <div class="button-group">

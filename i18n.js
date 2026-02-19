@@ -3,10 +3,24 @@
   "en": {
     "lang.name": "🇬🇧 EN",
     "lang.label": "Language",
-    "flavour.text": "Hi, how are you today? <br> Let’s pick a new project! :)",
+    "flavour.text": "Hey, let’s pick a new project! :)",
     "input.placeholder": "Enter project name",
     "btn.add": "Add",
     "btn.import": "📂 Import list (txt or csv)",
+
+    "lists.label": "List",
+    "lists.new": "🧾 New list",
+    "lists.rename": "✏️ Rename",
+    "lists.delete": "🗑 Delete",
+
+    "prompt.new_list": "New list name:",
+    "prompt.rename_list": "Rename list:",
+    "prompt.import_target": "Import into which list? Enter a name (new = create):",
+    "confirm.delete_list": "Delete this list? (This cannot be undone.)",
+
+    "toast.list_created": "List created: {name}",
+    "toast.list_renamed": "List renamed.",
+    "toast.list_deleted": "List deleted: {name}",
     "heading.progress": "In progress:",
     "heading.list": "My UFOs:",
     "btn.clear": "🗑 Clear all UFOs",
@@ -99,10 +113,24 @@
   "de": {
     "lang.name": "🇩🇪 DE",
     "lang.label": "Sprache",
-    "flavour.text": "Hallo, wie geht’s dir heute? <br> Lass uns ein Projekt finden! :)",
+    "flavour.text": "Hallo, lass uns ein Projekt finden! :)",
     "input.placeholder": "Projekt eingeben",
     "btn.add": "Hinzufügen",
     "btn.import": "📂 Liste importieren (.txt oder .csv)",
+
+    "lists.label": "Liste",
+    "lists.new": "🧾 Neue Liste",
+    "lists.rename": "✏️ Umbenennen",
+    "lists.delete": "🗑 Löschen",
+
+    "prompt.new_list": "Name der neuen Liste:",
+    "prompt.rename_list": "Liste umbenennen:",
+    "prompt.import_target": "In welche Liste importieren? Name eingeben (neu = anlegen):",
+    "confirm.delete_list": "Diese Liste löschen? (Kann nicht rückgängig gemacht werden.)",
+
+    "toast.list_created": "Liste erstellt: {name}",
+    "toast.list_renamed": "Liste umbenannt.",
+    "toast.list_deleted": "Liste gelöscht: {name}",
     "heading.progress": "In Arbeit:",
     "heading.list": "Meine UFOs:",
     "btn.clear": "🗑 Alle UFOs löschen",
@@ -119,24 +147,24 @@
     "btn.undo": "Rückgängig",
 
     "help.btn": "❓ Hilfe",
-    "help.title": "So nutzt du RandomiseMe",
-    "help.body": "1. Projekte manuell hinzufügen oder eine .txt/.csv-Liste importieren.<br><br>2. Tippe auf 🎲, um zufällig ein Projekt auszuwählen. Das gezogene Projekt wandert automatisch nach <b>In Arbeit</b>.<br><br>3. ✅ markiert als erledigt, ↩️ schiebt es zurück in die aktive Liste.<br><br>Importierte Listen dürfen durch Kommas, Semikola, Zeilenumbrüche oder Tabs getrennt sein.<br><br>4. Mit ☆/⭐ setzt du eine Priorität (höher = wird öfter gezogen).<br><br>5. 🗑 setzt die aktive Liste zurück (Erledigt & Verlauf bleiben).<br><br>Hinweis: Deine Liste wird lokal im Browser gespeichert. Wenn du die Website-Daten dieser Seite löschst, ist sie weg.",
+    "help.title": "So funktioniert RandomiseMe",
+    "help.body": "1. Projekte manuell hinzufügen oder eine .txt/.csv-Liste importieren.<br><br>2. Auf 🎲 tippen, um zufällig ein Projekt aus einer aktiven Liste auszuwählen. Das gezogene Projekt wandert automatisch nach <b>In Arbeit</b>.<br><br>3. ✅ markiert als erledigt, ↩️ holt es zurück in die aktive Liste.<br><br>Importierte Listen dürfen durch Kommata, Semikola, Zeilenumbrüche oder Tabs getrennt sein.<br><br>4. Mit ☆/⭐ wird eine Priorität gesetzt (Lostopfverfahren – höher = wird öfter gezogen).<br><br>5. 🗑 setzt die aktive Liste zurück (Erledigt & Verlauf bleiben erhalten).<br><br>Hinweis: Die Liste wird lokal im Browser gespeichert. Werden die Website-Daten dieser Seite gelöscht, müssen Listen neu importiert werden.",
     "help.update_hint": "Falls die Homescreen-App sich nicht richtig aktualisiert:",
     "help.reload": "🔄 App neu laden",
 
-    "iconpicker.note": "Nach dem Ändern bitte neu zum Homescreen hinzufügen / neu installieren.",
+    "iconpicker.note": "Nach dem Ändern neu zum Homescreen hinzufügen / neu installieren.",
     "iconpicker.title": "App-Icon-Farbe (für Installation)",
-    "footer.created": "RandomiseMe! – erstellt von Nico Siedler",
+    "footer.created": "RandomiseMe! – erstellt von Nico Siedler (ricodelsien)",
     "footer.license": "Version 0.9a 02/2026 veröffentlicht unter GPL3",
 
-    "confirm.clear": "Alle aktiven Projekte löschen? (Erledigt & Verlauf bleiben.)",
+    "confirm.clear": "Alle aktiven Projekte löschen? (Erledigt & Verlauf bleiben erhalten.)",
     "confirm.clear_done": "Erledigt-Liste wirklich leeren?",
     "confirm.clear_history": "Verlauf wirklich löschen?",
 
     "alert.no_projects": "Noch keine Projekte hinzugefügt!",
-    "alert.import_finished": "Import fertig: {count} neue Projekte hinzugefügt.",
+    "alert.import_finished": "Importiert: {count} neue Projekte hinzugefügt.",
     "alert.import_restored": "(+{count} wiederhergestellt)",
-    "alert.nothing_to_copy": "Noch nichts zum Kopieren.",
+    "alert.nothing_to_copy": "Nichts zum Kopieren.",
 
     "toast.copied": "In die Zwischenablage kopiert.",
     "toast.deleted": "Gelöscht: {name}",
@@ -161,7 +189,7 @@
 
     "btn.export": "⬇️ Export",
     "export.title": "Export",
-    "export.hint": "Wähle, was du exportieren möchtest:",
+    "export.hint": "Was soll exportiert werden?",
     "export.progress": "In Arbeit",
     "export.active": "Aktiv",
     "export.done": "Erledigt",
@@ -195,7 +223,7 @@
   "fr": {
     "lang.name": "🇫🇷 FR",
     "lang.label": "Langue",
-    "flavour.text": "Salut, comment ça va ? <br> Trouvons un projet ! :)",
+    "flavour.text": "Salut, trouvons un projet ! :)",
     "input.placeholder": "Nom de projet",
     "btn.add": "Ajouter",
     "btn.import": "📂 Importer une liste (txt ou csv)",
@@ -291,7 +319,7 @@
   "it": {
     "lang.name": "🇮🇹 IT",
     "lang.label": "Lingua",
-    "flavour.text": "Ciao, come va oggi? <br> Troviamo un nuovo progetto! :)",
+    "flavour.text": "Ciao, troviamo un nuovo progetto! :)",
     "input.placeholder": "Inserisci nome progetto",
     "btn.add": "Aggiungi",
     "btn.import": "📂 Importa lista (txt o csv)",
@@ -387,7 +415,7 @@
   "es": {
     "lang.name": "🇪🇸 ES",
     "lang.label": "Idioma",
-    "flavour.text": "Hola! ¿Qué tal estás? <br> ¡Vamos a elegir un proyecto! :)",
+    "flavour.text": "Hola! Vamos a elegir un proyecto! :)",
     "input.placeholder": "Escribe el nombre del proyecto",
     "btn.add": "Añadir",
     "btn.import": "📂 Importar lista (txt o csv)",
@@ -483,7 +511,7 @@
   "pl": {
     "lang.name": "🇵🇱 PL",
     "lang.label": "Język",
-    "flavour.text": "Cześć, jak się masz? <br> Wybierzmy nowy projekt! :)",
+    "flavour.text": "Cześć, wybierzmy nowy projekt! :)",
     "input.placeholder": "Wpisz nazwę projektu",
     "btn.add": "Dodaj",
     "btn.import": "📂 Importuj listę (txt lub csv)",
@@ -579,7 +607,7 @@
   "pt": {
     "lang.name": "🇵🇹 PT",
     "lang.label": "Idioma",
-    "flavour.text": "Olá, como você está? <br> Vamos escolher um projeto! :)",
+    "flavour.text": "Olá, vamos escolher um projeto! :)",
     "input.placeholder": "Escreve o nome do projeto",
     "btn.add": "Adicionar",
     "btn.import": "📂 Importar lista (txt ou csv)",
@@ -675,7 +703,7 @@
   "sv": {
     "lang.name": "🇸🇪 SV",
     "lang.label": "Språk",
-    "flavour.text": "Hej, hur mår du i dag? <br> Nu väljer vi ett projekt! :)",
+    "flavour.text": "Hej, nu väljer vi ett projekt! :)",
     "input.placeholder": "Skriv projektnamn",
     "btn.add": "Lägg till",
     "btn.import": "📂 Importera lista (txt eller csv)",
@@ -771,7 +799,7 @@
   "da": {
     "lang.name": "🇩🇰 DA",
     "lang.label": "Sprog",
-    "flavour.text": "Hej, hvordan har du det i dag? <br> Lad os vælge et projekt! :)",
+    "flavour.text": "Hej, lad os vælge et projekt! :)",
     "input.placeholder": "Indtast projektnavn",
     "btn.add": "Tilføj",
     "btn.import": "📂 Importér liste (txt eller csv)",
@@ -867,7 +895,7 @@
   "ru": {
     "lang.name": "🇷🇺 RU",
     "lang.label": "Язык",
-    "flavour.text": "Привет, как ты сегодня? <br> Давай выберем проект! :)",
+    "flavour.text": "Привет, давай выберем проект! :)",
     "input.placeholder": "Введите название проекта",
     "btn.add": "Добавить",
     "btn.import": "📂 Импорт списка (txt или csv)",
@@ -963,7 +991,7 @@
   "cs": {
     "lang.name": "🇨🇿 CS",
     "lang.label": "Jazyk",
-    "flavour.text": "Ahoj, jak se máš dnes? <br> Vyberme si projekt! :)",
+    "flavour.text": "Ahoj, vyberme si projekt! :)",
     "input.placeholder": "Zadej název projektu",
     "btn.add": "Přidat",
     "btn.import": "📂 Importovat seznam (txt nebo csv)",
@@ -1059,7 +1087,7 @@
   "nb": {
     "lang.name": "🇳🇴 NO",
     "lang.label": "Språk",
-    "flavour.text": "Hei, hvordan har du det i dag? <br> La oss velge et prosjekt! :)",
+    "flavour.text": "Hei, la oss velge et prosjekt! :)",
     "input.placeholder": "Skriv prosjektnavn",
     "btn.add": "Legg til",
     "btn.import": "📂 Importer liste (txt eller csv)",
@@ -1155,7 +1183,7 @@
   "fi": {
     "lang.name": "🇫🇮 FI",
     "lang.label": "Kieli",
-    "flavour.text": "Hei, miten voit tänään? <br> Valitaan projekti! :)",
+    "flavour.text": "Hei, valitaan projekti! :)",
     "input.placeholder": "Syötä projektin nimi",
     "btn.add": "Lisää",
     "btn.import": "📂 Tuo lista (txt tai csv)",
@@ -1251,7 +1279,7 @@
     "uk": {
   "lang.name": "🇺🇦 UK",
   "lang.label": "Мова",
-  "flavour.text": "Привіт, як ти сьогодні? <br> Давай виберемо проєкт! :)",
+  "flavour.text": "Привіт, давай виберемо проєкт! :)",
   "input.placeholder": "Введіть назву проєкту",
   "btn.add": "Додати",
   "btn.import": "📂 Імпорт списку (txt або csv)",
@@ -1347,7 +1375,7 @@
 "el": {
   "lang.name": "🇬🇷 GR",
   "lang.label": "Γλώσσα",
-  "flavour.text": "Γεια σου, πώς είσαι σήμερα; <br> Πάμε να διαλέξουμε ένα πρότζεκτ! :)",
+  "flavour.text": "Γεια σου, πάμε να διαλέξουμε ένα πρότζεκτ! :)",
   "input.placeholder": "Πληκτρολόγησε το όνομα του πρότζεκτ",
   "btn.add": "Προσθήκη",
   "btn.import": "📂 Εισαγωγή (txt ή csv)",
@@ -1443,7 +1471,7 @@
 "nl": {
   "lang.name": "🇳🇱 NL",
   "lang.label": "Taal",
-  "flavour.text": "Hoi, hoe gaat het vandaag? <br> Laten we een project uitkiezen! :)",
+  "flavour.text": "Hoi, laten we een project uitkiezen! :)",
   "input.placeholder": "Voer de projectnaam in",
   "btn.add": "Toevoegen",
   "btn.import": "📂 Lijst importeren (txt of csv)",
@@ -1539,7 +1567,7 @@
   "tr": {
   "lang.name": "🇹🇷 TR",
   "lang.label": "Dil",
-  "flavour.text": "Selam, bugün nasılsın? <br> Hadi bir proje seçelim! :)",
+  "flavour.text": "Merhaba, hadi bir proje seçelim! :)",
   "input.placeholder": "Proje adını gir",
   "btn.add": "Ekle",
   "btn.import": "📂 Listeyi içe aktar (txt veya csv)",

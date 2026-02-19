@@ -62,12 +62,17 @@ document.addEventListener("DOMContentLoaded", function () {
   applyIconVariant(getInitialIconVariant(), { persist: false });
 
   const STORAGE_KEYS = {
-    projects: "projects",
-    progress: "inProgressProjects",
-    done: "doneProjects",
-    history: "history",
-    groups: "projectGroups", // map: lower(name) => group/tag
-    prio: "projectPriorities" // map: lower(name) => 0..3
+    // v2 multi-list storage
+    listsV2: "rmListsV2",
+    activeListIdV2: "rmActiveListIdV2",
+
+    // legacy (single-list) keys — used only for one-time migration
+    legacy_projects: "projects",
+    legacy_progress: "inProgressProjects",
+    legacy_done: "doneProjects",
+    legacy_history: "history",
+    legacy_groups: "projectGroups", // map: lower(name) => group/tag
+    legacy_prio: "projectPriorities" // map: lower(name) => 0..3
   };
 
   const MAX_HISTORY = 50;
@@ -85,27 +90,160 @@ document.addEventListener("DOMContentLoaded", function () {
     resultActions: document.getElementById("resultActions"),
     randomBtn: document.getElementById("randomBtn"),
     langSelect: document.getElementById("langSelect"),
+
+    // multi-list UI
+    listSelect: document.getElementById("listSelect"),
+    newListBtn: document.getElementById("newListBtn"),
+    renameListBtn: document.getElementById("renameListBtn"),
+    deleteListBtn: document.getElementById("deleteListBtn"),
   };
 
   // ---------- state ----------
 
-  let projects = loadArray(STORAGE_KEYS.projects);
-  let inProgress = loadArray(STORAGE_KEYS.progress);
-  let doneProjects = loadArray(STORAGE_KEYS.done);
-  let history = loadArray(STORAGE_KEYS.history);
-  let groupsByName = loadObject(STORAGE_KEYS.groups);
-  let prioByName = loadObject(STORAGE_KEYS.prio);
+  let renderReady = false;
+
+  function loadString(key) {
+    try { return localStorage.getItem(key) || ""; } catch { return ""; }
+  }
+
+  function loadListsV2() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.listsV2);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.map(coerceListShape);
+      if (parsed && typeof parsed === "object" && Array.isArray(parsed.lists)) return parsed.lists.map(coerceListShape);
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
+  function coerceListShape(l) {
+    const obj = (l && typeof l === "object") ? l : {};
+    return {
+      id: String(obj.id || ("l_" + Math.random().toString(16).slice(2) + Date.now().toString(16))),
+      name: String(obj.name || "Main"),
+      createdAt: obj.createdAt || new Date().toISOString(),
+      projects: Array.isArray(obj.projects) ? obj.projects.map(String) : [],
+      inProgress: Array.isArray(obj.inProgress) ? obj.inProgress : [],
+      done: Array.isArray(obj.done) ? obj.done : [],
+      history: Array.isArray(obj.history) ? obj.history : [],
+      groupsByName: (obj.groupsByName && typeof obj.groupsByName === "object" && !Array.isArray(obj.groupsByName)) ? obj.groupsByName : {},
+      prioByName: (obj.prioByName && typeof obj.prioByName === "object" && !Array.isArray(obj.prioByName)) ? obj.prioByName : {}
+    };
+  }
+
+  function normalizeInProgressArray(arr) {
+    return (Array.isArray(arr) ? arr : []).map((x) => {
+      if (typeof x === "string") return { name: x, startedAt: new Date().toISOString() };
+      if (x && typeof x === "object" && x.name) return { name: String(x.name), startedAt: x.startedAt || new Date().toISOString() };
+      return null;
+    }).filter(Boolean);
+  }
+
+  function normalizeDoneArray(arr) {
+    return (Array.isArray(arr) ? arr : []).map((x) => {
+      if (typeof x === "string") return { name: x, doneAt: new Date().toISOString() };
+      if (x && typeof x === "object" && x.name) return { name: String(x.name), doneAt: x.doneAt || new Date().toISOString() };
+      return null;
+    }).filter(Boolean);
+  }
+
+  function normalizeHistoryArray(arr) {
+    return (Array.isArray(arr) ? arr : []).map((x) => {
+      if (!x) return null;
+      if (typeof x === "string") return { type: "roll", name: x, at: new Date().toISOString() };
+      if (x && typeof x === "object") {
+        const type = x.type || "roll";
+        const name = x.name || "";
+        const at = x.at || new Date().toISOString();
+        if (!name) return null;
+        return { type, name: String(name), at };
+      }
+      return null;
+    }).filter(Boolean);
+  }
+
+  function makeListFromLegacy() {
+    const legacyProjects = loadArray(STORAGE_KEYS.legacy_projects);
+    const legacyProgress = loadArray(STORAGE_KEYS.legacy_progress);
+    const legacyDone = loadArray(STORAGE_KEYS.legacy_done);
+    const legacyHistory = loadArray(STORAGE_KEYS.legacy_history);
+    const legacyGroups = loadObject(STORAGE_KEYS.legacy_groups);
+    const legacyPrio = loadObject(STORAGE_KEYS.legacy_prio);
+
+    const l = coerceListShape({
+      id: "l_main",
+      name: "Main",
+      createdAt: new Date().toISOString(),
+      projects: legacyProjects,
+      inProgress: legacyProgress,
+      done: legacyDone,
+      history: legacyHistory,
+      groupsByName: legacyGroups,
+      prioByName: legacyPrio
+    });
+
+    l.inProgress = normalizeInProgressArray(l.inProgress);
+    l.done = normalizeDoneArray(l.done);
+    l.history = normalizeHistoryArray(l.history);
+
+    return l;
+  }
+
+  function sanitizeListName(raw) {
+    const s = String(raw || "").trim();
+    return s.replace(/\s+/g, " ").trim().slice(0, 28);
+  }
+
+  function ensureUniqueListName(name, ignoreId = null) {
+    const base = sanitizeListName(name) || "List";
+    const exists = (n) => lists.some(l => l && l.id !== ignoreId && String(l.name || "").toLowerCase() === n.toLowerCase());
+    if (!exists(base)) return base;
+    let i = 2;
+    while (exists(`${base} ${i}`)) i++;
+    return `${base} ${i}`;
+  }
+
+  function createList(name) {
+    const finalName = ensureUniqueListName(name);
+    const id = "l_" + Math.random().toString(16).slice(2) + Date.now().toString(16);
+    return coerceListShape({ id, name: finalName, createdAt: new Date().toISOString() });
+  }
+
+  function findListByName(name) {
+    const n = String(name || "").trim().toLowerCase();
+    if (!n) return null;
+    return lists.find(l => String(l.name || "").trim().toLowerCase() === n) || null;
+  }
+
+  let lists = loadListsV2();
+  let activeListId = loadString(STORAGE_KEYS.activeListIdV2);
+
+  if (!Array.isArray(lists) || lists.length === 0) {
+    const migrated = makeListFromLegacy();
+    lists = [migrated];
+    activeListId = migrated.id;
+    try {
+      localStorage.setItem(STORAGE_KEYS.listsV2, JSON.stringify({ version: 2, lists }));
+      localStorage.setItem(STORAGE_KEYS.activeListIdV2, activeListId);
+    } catch {}
+  }
+
+  // active list data (these variables always point to the currently selected list)
+  let activeList = null;
+  let projects = [];
+  let inProgress = [];
+  let doneProjects = [];
+  let history = [];
+  let groupsByName = {};
+  let prioByName = {};
 
   // Fast membership checks (case-insensitive)
-  let projectsSet = new Set(projects.map(p => String(p).toLowerCase()));
-  // normalize inProgress format (legacy-safe)
-  inProgress = (Array.isArray(inProgress) ? inProgress : []).map((x) => {
-    if (typeof x === "string") return { name: x, startedAt: new Date().toISOString() };
-    if (x && typeof x === "object" && x.name) return { name: String(x.name), startedAt: x.startedAt || new Date().toISOString() };
-    return null;
-  }).filter(Boolean);
-  let progressSet = new Set(inProgress.map(x => String(x.name).toLowerCase()));
-  let doneSet = new Set(doneProjects.map(x => (x && x.name ? String(x.name).toLowerCase() : "")));
+  let projectsSet = new Set();
+  let progressSet = new Set();
+  let doneSet = new Set();
 
   // Keep a single undo action (simple + predictable)
   let lastUndo = null;
@@ -113,6 +251,79 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Last picked project name (for result action buttons)
   let lastPicked = null;
+
+  function rebuildSets() {
+    projectsSet = new Set(projects.map((p) => String(p).toLowerCase()));
+    progressSet = new Set(inProgress.map((p) => String(p.name || "").toLowerCase()));
+    doneSet = new Set(doneProjects.map((p) => String(p.name || "").toLowerCase()));
+  }
+
+  function renderListSelect() {
+    const sel = DOM.listSelect;
+    if (!sel) return;
+
+    sel.innerHTML = "";
+    for (const l of lists) {
+      const opt = document.createElement("option");
+      opt.value = l.id;
+      opt.textContent = l.name;
+      sel.appendChild(opt);
+    }
+    sel.value = activeListId;
+  }
+
+  function setActiveList(id, { persist = true } = {}) {
+    const found = lists.find((l) => l && l.id === id) || lists[0] || null;
+    activeList = found;
+    activeListId = found ? found.id : "";
+
+    projects = activeList ? activeList.projects : [];
+    inProgress = activeList ? activeList.inProgress : [];
+    doneProjects = activeList ? activeList.done : [];
+    history = activeList ? activeList.history : [];
+    groupsByName = activeList ? activeList.groupsByName : {};
+    prioByName = activeList ? activeList.prioByName : {};
+
+    // normalize shapes (legacy safety)
+    inProgress = normalizeInProgressArray(inProgress);
+    if (activeList) activeList.inProgress = inProgress;
+
+    doneProjects = normalizeDoneArray(doneProjects);
+    if (activeList) activeList.done = doneProjects;
+
+    history = normalizeHistoryArray(history);
+    if (activeList) activeList.history = history;
+
+    rebuildSets();
+    renderListSelect();
+
+    // transient UI state resets
+    lastPicked = null;
+    lastUndo = null;
+    clearToast();
+
+    if (persist) scheduleSave();
+
+    if (renderReady) {
+      if (DOM.result) DOM.result.innerHTML = "";
+      scheduleRender("progress");
+      scheduleRender("projects");
+      scheduleRender("done");
+      scheduleRender("history");
+      scheduleRender("resultActions");
+    }
+  }
+
+  function currentListName() {
+    return (activeList && activeList.name) ? String(activeList.name) : "List";
+  }
+
+  // initial list binding (no render yet)
+  if (!activeListId || !lists.some((l) => l && l.id === activeListId)) {
+    activeListId = lists[0] ? lists[0].id : "";
+  }
+  setActiveList(activeListId, { persist: false });
+
 
   // ---------- language select (English alphabetical order) ----------
 
@@ -188,12 +399,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function saveAll() {
-    localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(projects));
-    localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify(inProgress));
-    localStorage.setItem(STORAGE_KEYS.done, JSON.stringify(doneProjects));
-    localStorage.setItem(STORAGE_KEYS.history, JSON.stringify(history));
-    localStorage.setItem(STORAGE_KEYS.groups, JSON.stringify(groupsByName));
-    localStorage.setItem(STORAGE_KEYS.prio, JSON.stringify(prioByName));
+    try {
+      localStorage.setItem(STORAGE_KEYS.listsV2, JSON.stringify({ version: 2, lists }));
+      localStorage.setItem(STORAGE_KEYS.activeListIdV2, activeListId);
+    } catch {}
   }
 
   // Defer storage writes so UI updates feel instant on mobile.
@@ -228,12 +437,7 @@ document.addEventListener("DOMContentLoaded", function () {
     flushSaveNow();
   });
 
-  function rebuildSets() {
-    projectsSet = new Set(projects.map(p => String(p).toLowerCase()));
-    progressSet = new Set(inProgress.map(x => String(x.name).toLowerCase()));
-    doneSet = new Set(doneProjects.map(x => (x && x.name ? String(x.name).toLowerCase() : "")));
-  }
-
+  
   function escapeHTML(str) {
     const s = String(str ?? "");
     return s
@@ -371,7 +575,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function pushHistory(type, name) {
     history.unshift({ type, name, at: new Date().toISOString() });
-    if (history.length > MAX_HISTORY) history = history.slice(0, MAX_HISTORY);
+    if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
     scheduleSave();
     scheduleRender("history");
   }
@@ -487,15 +691,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (a.type === "clearActive") {
-      projects = a.snapshot;
+      projects.length = 0;
+      projects.push(...a.snapshot);
     }
 
     if (a.type === "clearDone") {
-      doneProjects = a.snapshot;
+      doneProjects.length = 0;
+      doneProjects.push(...a.snapshot);
     }
 
     if (a.type === "clearHistory") {
-      history = a.snapshot;
+      history.length = 0;
+      history.push(...a.snapshot);
     }
 
     if (a.type === "deleteProgress") {
@@ -754,7 +961,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!confirmDelete) return;
 
     const snapshot = [...projects];
-    projects = [];
+    projects.length = 0;
     projectsSet.clear();
 
     scheduleSave();
@@ -776,7 +983,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!ok) return;
 
     const snapshot = [...doneProjects];
-    doneProjects = [];
+    doneProjects.length = 0;
     doneSet.clear();
 
     scheduleSave();
@@ -793,7 +1000,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!ok) return;
 
     const snapshot = [...history];
-    history = [];
+    history.length = 0;
 
     scheduleSave();
     scheduleRender("history");
@@ -1109,7 +1316,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function exportAsTxt({ includeProgress, includeActive, includeDone, includeHistory }) {
     const lines = [];
     const stamp = new Date().toISOString().slice(0, 19).replace("T", " ");
-    lines.push(`RandomiseMe export (${stamp})`);
+    lines.push(`RandomiseMe export — ${currentListName()} (${stamp})`);
 
     if (includeProgress) {
       lines.push("\n== IN PROGRESS ==");
@@ -1167,29 +1374,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function exportAsCsv({ includeProgress, includeActive, includeDone, includeHistory }) {
     const rows = [];
-    rows.push(["list", "group", "name", "meta1", "meta2"]);
+    rows.push(["list_name", "bucket", "group", "name", "meta1", "meta2"]);
 
     if (includeProgress) {
       for (const it of inProgress) {
-        rows.push(["progress", groupOf(it.name), it.name, it.startedAt || "", String(prioOf(it.name))]);
+        rows.push([currentListName(), "progress", groupOf(it.name), it.name, it.startedAt || "", String(prioOf(it.name))]);
       }
     }
 
     if (includeActive) {
       for (const name of projects) {
-        rows.push(["active", groupOf(name), name, String(prioOf(name)), ""]);
+        rows.push([currentListName(), "active", groupOf(name), name, String(prioOf(name)), ""]);
       }
     }
 
     if (includeDone) {
       for (const it of doneProjects) {
-        rows.push(["done", groupOf(it.name), it.name, it.doneAt || "", String(prioOf(it.name))]);
+        rows.push([currentListName(), "done", groupOf(it.name), it.name, it.doneAt || "", String(prioOf(it.name))]);
       }
     }
 
     if (includeHistory) {
       for (const h of history.slice(0, MAX_HISTORY)) {
-        rows.push(["history", groupOf(h.name), h.name, h.type || "", h.at || ""]);
+        rows.push([currentListName(), "history", groupOf(h.name), h.name, h.type || "", h.at || ""]);
       }
     }
 
@@ -1281,66 +1488,121 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // import projects from txt or csv (supports: [Group] Name OR Group :: Name)
   const fileInput = document.getElementById("fileInput");
-  if (fileInput) {
-    fileInput.addEventListener("change", function (event) {
-      const file = event.target.files[0];
-      if (!file) return;
 
+  function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = function (e) {
-        const content = e.target.result;
-        const entries = String(content || "").split(/[\r\n,;\t]+/);
-
-        let added = 0;
-        let restored = 0;
-
-        entries.forEach((entry) => {
-          let trimmed = normalizeName(entry);
-          trimmed = trimmed.replace(/^"(.*)"$/, "$1");
-          if (!trimmed) return;
-
-          const { name, group } = parseNameAndGroup(trimmed);
-          if (!name) return;
-
-          const key = name.toLowerCase();
-
-          // if in done → restore
-          if (doneSet.has(key)) {
-            const doneIdx = findIndexCaseInsensitive(doneProjects, name);
-            if (doneIdx !== -1) {
-              const item = doneProjects.splice(doneIdx, 1)[0];
-              doneSet.delete(key);
-              if (!projectsSet.has(key)) {
-                projects.push(item.name);
-                projectsSet.add(key);
-              }
-              if (group) setGroup(item.name, group);
-              restored++;
-              return;
-            }
-          }
-
-          if (!projectsSet.has(key)) {
-            projects.push(name);
-            projectsSet.add(key);
-            if (group) setGroup(name, group);
-            added++;
-          } else {
-            // duplicate import: still update group if provided
-            if (group) setGroup(name, group);
-          }
-        });
-
-        scheduleSave();
-        scheduleRender("projects");
-        scheduleRender("done");
-
-        const msg = t("alert.import_finished", { count: added });
-        const restoredMsg = restored > 0 ? "\n" + t("alert.import_restored", { count: restored }) : "";
-        alert(msg + restoredMsg);
-      };
-
+      reader.onload = (e) => resolve(String(e.target.result || ""));
+      reader.onerror = () => reject(new Error("read failed"));
       reader.readAsText(file);
+    });
+  }
+
+  function importContentIntoCurrentList(content) {
+    const entries = String(content || "").split(/[\r\n,;\t]+/);
+
+    let added = 0;
+    let restored = 0;
+
+    entries.forEach((entry) => {
+      let trimmed = normalizeName(entry);
+      trimmed = trimmed.replace(/^\"(.*)\"$/, "$1");
+      if (!trimmed) return;
+
+      const { name, group } = parseNameAndGroup(trimmed);
+      if (!name) return;
+
+      const key = name.toLowerCase();
+
+      // if in done → restore
+      if (doneSet.has(key)) {
+        const doneIdx = findIndexCaseInsensitive(doneProjects, name);
+        if (doneIdx !== -1) {
+          const item = doneProjects.splice(doneIdx, 1)[0];
+          doneSet.delete(key);
+          if (!projectsSet.has(key)) {
+            projects.push(item.name);
+            projectsSet.add(key);
+          }
+          if (group) setGroup(item.name, group);
+          restored++;
+          return;
+        }
+      }
+
+      if (!projectsSet.has(key)) {
+        projects.push(name);
+        projectsSet.add(key);
+        if (group) setGroup(name, group);
+        added++;
+      } else {
+        if (group) setGroup(name, group);
+      }
+    });
+
+    scheduleSave();
+    scheduleRender("projects");
+    scheduleRender("done");
+
+    return { added, restored };
+  }
+
+  async function importSingleFile(file) {
+    const defaultName = currentListName();
+    const targetName = prompt(t("prompt.import_target"), defaultName);
+    if (targetName === null) return;
+
+    const requested = sanitizeListName(targetName);
+    if (!requested) return;
+
+    let target = findListByName(requested);
+    if (!target) {
+      target = createList(requested);
+      lists.push(target);
+    }
+
+    setActiveList(target.id);
+
+    const content = await readFileAsText(file);
+    const { added, restored } = importContentIntoCurrentList(content);
+
+    const msg = t("alert.import_finished", { count: added });
+    const restoredMsg = restored > 0 ? "\n" + t("alert.import_restored", { count: restored }) : "";
+    alert(msg + restoredMsg);
+  }
+
+  async function importMultipleFiles(files) {
+    const createdIds = [];
+    const contents = await Promise.all(files.map(readFileAsText));
+
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const base = sanitizeListName(String(f.name || "Imported").replace(/\.[^\.]+$/, "")) || "Imported";
+      const list = createList(base);
+      lists.push(list);
+      createdIds.push(list.id);
+
+      setActiveList(list.id, { persist: false });
+      importContentIntoCurrentList(contents[i]);
+    }
+
+    // switch to first newly created list
+    if (createdIds.length) setActiveList(createdIds[0]);
+    alert(`Imported ${files.length} file(s) into ${createdIds.length} list(s).`);
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener("change", async function (event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+
+      try {
+        if (files.length === 1) await importSingleFile(files[0]);
+        else await importMultipleFiles(files);
+      } catch {
+        alert("Import failed.");
+      }
+
       event.target.value = "";
     });
   }
@@ -1458,7 +1720,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const opts = currentExportOptions();
       const content = exportAsTxt(opts);
       const date = new Date().toISOString().slice(0, 10);
-      downloadFile(content, "text/plain;charset=utf-8", `RandomiseMe_export_${date}.txt`);
+      downloadFile(content, "text/plain;charset=utf-8", `RandomiseMe_${currentListName().replace(/[^a-z0-9]+/gi, '_')}_export_${date}.txt`);
       showToast(t("toast.exported"));
     });
   }
@@ -1468,7 +1730,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const opts = currentExportOptions();
       const content = exportAsCsv(opts);
       const date = new Date().toISOString().slice(0, 10);
-      downloadFile(content, "text/csv;charset=utf-8", `RandomiseMe_export_${date}.csv`);
+      downloadFile(content, "text/csv;charset=utf-8", `RandomiseMe_${currentListName().replace(/[^a-z0-9]+/gi, '_')}_export_${date}.csv`);
       showToast(t("toast.exported"));
     });
   }
@@ -1482,7 +1744,64 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // Reload app (helps iOS homescreen caching)
+    // multi-list actions
+  if (DOM.listSelect) {
+    DOM.listSelect.addEventListener("change", (e) => {
+      const id = e.target.value;
+      setActiveList(id);
+      showToast(String(currentListName()));
+    });
+  }
+
+  if (DOM.newListBtn) {
+    DOM.newListBtn.addEventListener("click", () => {
+      const name = prompt(t("prompt.new_list"), "");
+      if (name === null) return;
+      const nm = sanitizeListName(name);
+      if (!nm) return;
+
+      const list = createList(nm);
+      lists.push(list);
+      setActiveList(list.id);
+      showToast(t("toast.list_created", { name: list.name }));
+    });
+  }
+
+  if (DOM.renameListBtn) {
+    DOM.renameListBtn.addEventListener("click", () => {
+      if (!activeList) return;
+      const name = prompt(t("prompt.rename_list"), activeList.name || "");
+      if (name === null) return;
+      const nm = sanitizeListName(name);
+      if (!nm) return;
+      activeList.name = ensureUniqueListName(nm, activeList.id);
+      renderListSelect();
+      scheduleSave();
+      showToast(t("toast.list_renamed"));
+    });
+  }
+
+  if (DOM.deleteListBtn) {
+    DOM.deleteListBtn.addEventListener("click", () => {
+      if (!activeList) return;
+      const ok = confirm(t("confirm.delete_list"));
+      if (!ok) return;
+
+      const deletedName = activeList.name;
+      const idx = lists.findIndex((l) => l && l.id === activeList.id);
+      if (idx !== -1) lists.splice(idx, 1);
+
+      if (lists.length === 0) {
+        lists.push(createList("Main"));
+      }
+
+      const next = lists[Math.min(Math.max(idx, 0), lists.length - 1)];
+      setActiveList(next.id);
+      showToast(t("toast.list_deleted", { name: deletedName }));
+    });
+  }
+
+// Reload app (helps iOS homescreen caching)
   const reloadBtn = document.getElementById("reloadBtn");
   if (reloadBtn) {
     reloadBtn.addEventListener("click", async function () {
@@ -1511,6 +1830,9 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // initial render
+
+  renderReady = true;
+  renderListSelect();
   buildLanguageSelectEnglishAlphabetical();
 
   // Re-render lists on language change (button aria labels, history verbs)
